@@ -1,0 +1,20 @@
+[Unit]
+Description=chatter daemon
+Requires=chatter.socket
+After=network.target
+
+[Service]
+Type=notify
+# the specific user that our service will run as
+User=chatter
+Group=chatter
+RuntimeDirectory=chatter
+WorkingDirectory=/home/chatter
+ExecStart=/home/chatter/.venv/bin/gunicorn -k uvicorn.workers.UvicornWorker main:api
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

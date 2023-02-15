@@ -1,0 +1,6 @@
+slack_bolt
+starlette
+openai
+toml
+uvicorn
+gunicorn
