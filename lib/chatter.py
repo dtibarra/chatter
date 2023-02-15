@@ -1,5 +1,4 @@
 import openai
-from langchain import PromptTemplate
 
 SEPARATOR_TOKEN = ""
 
