@@ -13,9 +13,11 @@ Chatter currently has the following features:
   * Responds when you ping the bot.
   * Carries a full conversation if you reply to the bot in a thread.
   * Can continue replying in a thread if you restart the daemon.
+
 Chatter currently has these issues:
   * Conversation LRU cache is set to 100. If it has too many top level messages, some old conversation contexts will get evicted.
   * On that note, if you restart Chatter, it'll forget all conversations, so it won't understand the conversation in existing threads.
+  * Chatter will only take the last 4 messages into account, so lengthy conversations will eventually drift off topic.
   * Prompt config is needlessly bulky, probably could do with removing all of these example conversations in a future release.
 
 ## Getting Started
