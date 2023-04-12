@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+
 # conversation LRU. Prob could replace some of this with langchain, but this will work for now.
 class LRUConvo:
     # initialising capacity

@@ -1,0 +1,4 @@
+.venv
+chatter.db
+chatter.log
+__pycache__

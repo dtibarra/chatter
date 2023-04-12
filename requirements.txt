@@ -1,6 +1,8 @@
 slack_bolt
 starlette
 openai
-toml
 uvicorn
 gunicorn
+sqlalchemy
+aiosqlite
+prompt_toolkit

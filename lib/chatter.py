@@ -1,58 +1,75 @@
 import openai
+from collections import OrderedDict
+from lib.schemas import Message, Convo
 
-SEPARATOR_TOKEN = ""
+
+class Memory:
+    def __init__(self, capacity: int):
+        self.cache = OrderedDict()
+        self.capacity = capacity
+
+    # return a convo
+    def get(self, thread_timestamp: int) -> int:
+        if thread_timestamp not in self.cache:
+            return False
+        else:
+            self.cache.move_to_end(thread_timestamp)
+            return self.cache[thread_timestamp]
+
+    # save a convo
+    def push(self, thread_timestamp: int, message: Message) -> None:
+        if thread_timestamp not in self.cache:
+            self.cache[thread_timestamp] = Convo()
+            self.cache[thread_timestamp].push(message)
+        else:
+            self.cache[thread_timestamp].push(message)
+        self.cache.move_to_end(thread_timestamp)
+
+        if len(self.cache) > self.capacity:
+            self.cache.popitem(last=False)
 
 
 class Chatter:
-    def __init__(self, openai_config, openai_prompt_config):
-        self.openai_config = openai_config
-        openai.api_key = self.openai_config["OPENAI_KEY"]
-        self.openai_prompt_config = openai_prompt_config
-        self.user_id = None
+    class Session:
+        def __init__(self, chatter_instance, thread_timestamp, initialize_prompt=True):
+            self.chatter_instance = chatter_instance
+            self.thread_timestamp = thread_timestamp
+            self.chatter_instance.memory.push(thread_timestamp, chatter_instance.prompt)
 
-    async def render_prompt(
-        self, requesting_user, requesting_message, conversation_context=None
-    ):
-        # Prompt
-        template = f"System: Instructions for {self.openai_prompt_config['bot_name']}: {self.openai_prompt_config['instructions']}\n"
-        # Example conversations. Might want to remove these, they do help add flavor to the bot, but they increase my openai bill.
-        template += "System: Example conversations:\n"
-        for example_convo in self.openai_prompt_config["example_conversations"]:
-            for example_message in example_convo["messages"]:
-                template += f"<@{example_message['user']}>: {example_message['text']}\n"
-            template += "\n"
-        # Current conversation.
-        template += f"System: Current conversation:\n"
-        if conversation_context:
-            template += conversation_context
-        template += f"<@{requesting_user}>: {requesting_message}\n"
-        if self.user_id:
-            template += f"<@{self.user_id}>:"
-        else:
-            template += f"<@{self.openai_prompt_config['bot_name']}>:"
+        async def chat(self, role, message):
+            m = Message(role, message)
+            self.chatter_instance.memory.push(self.thread_timestamp, m)
+            response = await self.chatter_instance._chat(
+                self.chatter_instance.memory.get(self.thread_timestamp)
+            )
+            response_message = Message(
+                response["choices"][0]["message"]["role"],
+                response["choices"][0]["message"]["content"],
+            )
+            self.chatter_instance.memory.push(self.thread_timestamp, response_message)
+            return response_message
 
-        return template
+    def __init__(self, openapi_key, prompt="You are a chat bot."):
+        openai.api_key = openapi_key
+        self.prompt = Message("system", prompt)
+        self.memory = Memory(10)
+        self.id = None
+
+    async def new_session(self, thread_timestamp):
+        s = Chatter.Session(self, thread_timestamp)
+        return s
+
+    async def build_session(self, thread_timestamp):
+        s = Chatter.Session(self, thread_timestamp, False)
+        return s
+
+    async def _chat(self, conversation):
+        return await openai.ChatCompletion.acreate(
+            model="gpt-4", messages=[m.asdict() for m in conversation.messages]
+        )
+
+    async def set_id(self, id):
+        self.id = id
 
     async def get_id(self):
-        return self.user_id
-
-    async def set_id(self, user_id):
-        self.user_id = user_id
-
-    async def openai_response(
-        self, requesting_user, message, conversation_context=None
-    ):
-        prompt = await self.render_prompt(
-            requesting_user, message, conversation_context
-        )
-        # generate response. Note the stop sequence, it should prevent the bot from hallucinating more of a conversaton.
-        response = openai.Completion.create(
-            engine=self.openai_config["OPENAI_MODEL"],
-            prompt=prompt,
-            temperature=1.0,
-            top_p=0.9,
-            max_tokens=512,
-            stop="\n<@",
-        )
-
-        return response.choices[0].text.strip()
+        return self.id
