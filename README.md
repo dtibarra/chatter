@@ -19,6 +19,7 @@ Chatter currently has these issues:
   * On that note, if you restart Chatter, it'll forget all conversations, so it won't understand the conversation in existing threads.
   * Chatter will only take the last 4 messages into account, so lengthy conversations will eventually drift off topic.
   * Prompt config is needlessly bulky, probably could do with removing all of these example conversations in a future release.
+  * There is currently a bug with threads. If I @ chatter, and chatter replies, and then I reply to chatter in a thread, the context of the conversation is localized to only messages in the thread, which doesn't pull in the very first @ message. In my opinion, it should pull in the originating message as well.
 
 ## Getting Started
 
