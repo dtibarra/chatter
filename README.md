@@ -38,8 +38,8 @@ If you want to run Chatter locally or make changes to the code, follow these ste
 ## Running in docker/k8s
 
 The included dockerfile should get you a usable image. You'll need to build it and push it to a registry. Some things to note:
-  * By defaujlt, the containerized version of the bot will output to STDOUT to fit into k8s a little nicer. If you want to override this and log to /app/chatter.log, override the ENV variable `STDOUT_LOGGING` to anything other than `true` on deployment.
-  * Persistence is stored in `/var/lib/chatter/chatter.db` by default, you'll need to mount this directory from a persistent volume if you want the configuration to pursist over restarts. 
+  * By default, the containerized version of the bot will output to STDOUT to fit into k8s a little nicer. If you want to override this and log to /app/chatter.log, override the ENV variable `STDOUT_LOGGING` to anything other than `true` on deployment.
+  * Persistence is stored in `/var/lib/chatter/chatter.db` by default, you'll need to mount this directory from a persistent volume if you want the configuration to persist over restarts. 
   * App Config can be defined via the environment variables:
     - SLACK_BOT_TOKEN
     - SLACK_SIGNING_SECRET
