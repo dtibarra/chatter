@@ -1,3 +1,4 @@
+import os
 import openai
 from collections import OrderedDict
 from lib.schemas import Message, Convo
@@ -65,7 +66,7 @@ class Chatter:
 
     async def _chat(self, conversation):
         return await openai.ChatCompletion.acreate(
-            model="gpt-4", messages=[m.asdict() for m in conversation.messages]
+            model=os.getenv("GPT_MODEL", "gpt-4"), messages=[m.asdict() for m in conversation.messages]
         )
 
     async def set_id(self, id):
