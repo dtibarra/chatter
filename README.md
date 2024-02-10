@@ -32,6 +32,19 @@ If you want to run Chatter locally or make changes to the code, follow these ste
   * If you want to use systemd, check my systemd unit files, you may need to adjust paths.
   * I deploy this with nginx. I make an upstream, e.g. `server unix:/run/gunicorn.sock fail_timeout=0;`, and then proxy_pass to that upstream.
   * Follow these steps to hook it up to your workspace: https://api.slack.com/start/building/bolt-python
+  * App defaults to using the `gpt-4` model by default, this can be overriden with GPT_MODEL environment variable.
+  * On first start, the app will create an empty database with `null` values if none have been specified via ENV. You can either inject them using environment variables as mentioned below, or just manually insert your values into the sqlite db. 
+
+## Running in docker/k8s
+
+The included dockerfile should get you a usable image. You'll need to build it and push it to a registry. Some things to note:
+  * By default, the containerized version of the bot will output to STDOUT to fit into k8s a little nicer. If you want to override this and log to /app/chatter.log, override the ENV variable `STDOUT_LOGGING` to anything other than `true` on deployment.
+  * Persistence is stored in `/var/lib/chatter/chatter.db` by default, you'll need to mount this directory from a persistent volume if you want the configuration to persist over restarts. 
+  * App Config can be defined via the environment variables:
+    - SLACK_BOT_TOKEN
+    - SLACK_SIGNING_SECRET
+    - OPENAI_KEY
+    - PROMPT_TEXT
 
 ## Contributing
 

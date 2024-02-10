@@ -10,7 +10,7 @@ if not openai_key:
     print("omg no config")
     sys.exit(1)
 
-prompt_text = asyncio.run(PromptRepository.get_prompt_by_name("txsysops"))
+prompt_text = asyncio.run(PromptRepository.get_prompt_by_name("default"))
 
 c = Chatter(openai_key, prompt_text)
 

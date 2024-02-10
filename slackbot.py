@@ -1,6 +1,11 @@
+import os
 import logging
 
-logging.basicConfig(level=logging.DEBUG, filename="chatter.log")
+logging.basicConfig(level=logging.DEBUG)
+if os.getenv("STDOUT_LOGGING") != "true":
+    fh = logging.FileHandler("chatter.log")
+    fh.setLevel(logging.DEBUG)
+    logger.addHandler(fh)
 import asyncio
 from lib.chatter import Chatter
 from slack_bolt.async_app import AsyncApp
@@ -19,7 +24,7 @@ slack_signing_secret = asyncio.run(
     ConfigRepository.get_config_by_name("slack_signing_secret")
 )
 openai_key = asyncio.run(ConfigRepository.get_config_by_name("openapi_key"))
-prompt_text = asyncio.run(PromptRepository.get_prompt_by_name("generic"))
+prompt_text = asyncio.run(PromptRepository.get_prompt_by_name("default"))
 
 chatter = Chatter(openai_key, prompt_text)
 
