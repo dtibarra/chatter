@@ -1,11 +1,9 @@
 import os
 import logging
-
-logging.basicConfig(level=logging.DEBUG)
 if os.getenv("STDOUT_LOGGING") != "true":
-    fh = logging.FileHandler("chatter.log")
-    fh.setLevel(logging.DEBUG)
-    logger.addHandler(fh)
+    logging.basicConfig(level=logging.DEBUG, filename="chatter.log")
+else:
+    logging.basicConfig(level=logging.DEBUG)
 import asyncio
 from lib.chatter import Chatter
 from slack_bolt.async_app import AsyncApp
@@ -16,8 +14,7 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.routing import Route
 import openai
-from lib.schemas import Message
-import re
+from lib.schemas import AIMessage, SlackMessage, TextResponse, ImageResponse
 
 slack_bot_token = asyncio.run(ConfigRepository.get_config_by_name("slack_bot_token"))
 slack_signing_secret = asyncio.run(
@@ -26,7 +23,7 @@ slack_signing_secret = asyncio.run(
 openai_key = asyncio.run(ConfigRepository.get_config_by_name("openapi_key"))
 prompt_text = asyncio.run(PromptRepository.get_prompt_by_name("default"))
 
-chatter = Chatter(openai_key, prompt_text)
+chatter = Chatter(openai_key)
 
 app = AsyncApp(
     token=slack_bot_token,
@@ -36,7 +33,6 @@ app = AsyncApp(
 
 app_handler = AsyncSlackRequestHandler(app)
 
-
 @app.middleware
 async def log_request(logger, body, next):
     # middleware so that our bot can become aware of our user id, so that we can differentiate in the message event.
@@ -44,78 +40,63 @@ async def log_request(logger, body, next):
     if not await chatter.get_id():
         await chatter.set_id(body["authorizations"][0]["user_id"])
     return await next()
-
-
+    
 # if someone mentions the app
 @app.event("app_mention")
 async def handle_app_mentions(body, say, logger):
-    # if this mention is in a thread, and there's a convo attached to it, then bail, because we're gonna let
-    # the message event capture this message.
-    if "thread_ts" in body["event"]:
-        chat_session = chatter.get_session(body["event"]["thread_ts"])
-        if chat_session:
-            return
-    # else, this is a mention either in a thread somewhere, or in a chatter thread.
-    # try to get a completion and then reply to the mention either in a thread, or top-level message.
-    # if the mention also occurs in a thread started by chatter (someone replying to a chatter message),
-    # then ignore. we'll handle it in the message event.
+    slack_message = SlackMessage(body)
+    #handle in the message function
+    if slack_message.is_threaded_message():
+        return
     try:
-        chat_session = await chatter.new_session(body["event"]["ts"])
-        response = await chat_session.chat(
-            "user", re.sub(r"<@[A-Z0-9]+>", "", body["event"]["text"])
+        response = await chatter.process_message(
+            AIMessage("user", slack_message.text)
         )
-    except openai.error.RateLimitError:
-        response = "OpenAI is having problems, I can't respond right now :("
-    logger.info(f"Memory: {chatter.memory.cache}")
-    logger.info(f"Responding with {response.content}")
-    if "thread_ts" in body["event"]:
-        await say({"text": response.content, "thread_ts": body["event"]["thread_ts"]})
-    else:
-        await say(response.content)
-
+    except openai.RateLimitError:
+        response = TextResponse("OpenAI is having problems, I can't respond right now :(")
+    except openai.BadRequestError:
+        response = TextResponse("OpenAI won't let me respond to that :(")
+    if type(response) is ImageResponse: 
+        await app.client.files_upload(channels=slack_message.channel, file=response.image_data, filename="dalle3-result.png",filetype="png")
+    else: 
+        await say(response.to_slack_response())
 
 @app.event("message")
 async def handle_message_events(body, say, logger):
-    # message event listens for all messages in a channel.
-    # if a message comes from the bot's own user id, then we need to store the message in our LRU to maintain convo context.
-    # check if it's a top level message, or a thread reply, and store accordingly.
-    if body["event"]["user"] == await chatter.get_id():
+    slack_message = SlackMessage(body)
+    logger.info(body)
+    if slack_message.source_user_id == await chatter.get_id():
         # if a top level chatter message comes our way, we need to remember it for future conversations.
-        if "thread_ts" not in body["event"]:
+        if not slack_message.is_threaded_message():
             # it's a top level chatter message, we need to go ahead and remember this convo
-            chatter.memory.push(
-                body["event"]["ts"], Message("assistant", body["event"]["text"])
+            await chatter.create_conversation(
+                slack_message.timestamp, AIMessage("assistant", slack_message.text)
             )
-            logger.info(f"Memory: {chatter.memory.cache}")
-
     else:
         # if it's a non-chatter reply to a thread, we need to fetch a completion and reply, and then store the response in the LRU.
-        if "thread_ts" in body["event"]:
+        if slack_message.is_threaded_message():
             # if chatter can remember the conversation, then build a session from it and then chat with it
-            if chatter.memory.get(body["event"]["thread_ts"]):
-                chat_session = await chatter.build_session(body["event"]["thread_ts"])
-                if chat_session:
+            if await chatter.conversation_exists(slack_message.thread_timestamp):
+                chat_conversation = await chatter.get_conversation(slack_message.thread_timestamp)
+                if chat_conversation:
                     try:
-                        response = await chat_session.chat(
-                            "user", re.sub(r"<@[A-Z0-9]+>", "", body["event"]["text"])
+                        response = await chatter.process_message(
+                            AIMessage("user", slack_message.text),
+                            chat_conversation
                         )
-                    except openai.error.RateLimitError:
-                        response = (
-                            "OpenAI is having problems, I can't respond right now :("
-                        )
-                    logger.info(f"Memory: {chatter.memory.cache}")
-                    logger.info(f"Responding with {response.content}")
-                    await say(
-                        {
-                            "text": response.content,
-                            "thread_ts": body["event"]["thread_ts"],
-                        }
-                    )
+                    except openai.RateLimitError:
+                        response = TextResponse("OpenAI is having problems, I can't respond right now :(")
+                    except openai.BadRequestError:
+                        response = TextResponse("OpenAI won't let me respond to that :(")
+                    else:
+                        await chatter.append_conversation(slack_message.thread_timestamp, AIMessage("user", slack_message.text))
+                        await chatter.append_conversation(slack_message.thread_timestamp, AIMessage("assistant", response))
+                        response['thread_ts'] = slack_message.thread_timestamp
+                        await say(response)
 
 
 async def endpoint(req: Request):
     return await app_handler.handle(req)
-
 
 api = Starlette(
     debug=False, routes=[Route("/slack/events", endpoint=endpoint, methods=["POST"])]

@@ -57,7 +57,7 @@ async def init_models():
         for k, v in env_map.items():
             insert_stmt = insert(Config).values(
                 config_name = k, 
-                config_value = os.getenv(v)
+                config_value = os.getenv(v) or ''
             )
             if os.getenv(v) is not None:
                 update_stmt = insert_stmt.on_conflict_do_update(
