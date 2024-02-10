@@ -1,4 +1,5 @@
-import openai
+from openai import AsyncOpenAI
+import json
 from collections import OrderedDict
 from lib.schemas import AIMessage, Convo, TextResponse, ImageResponse
 import requests
@@ -47,17 +48,27 @@ class Chatter:
 
         self.chat_prompt = AIMessage("system", """You are a generic bot who is happy to respond to requests to the best of his abilities.""")
         self.conversations = Conversations(10)
-
         self.slack_id = None
 
     async def get_conversation(self, thread_timestamp):
         s = self.conversations.get(thread_timestamp)
         self.conversations.bump_thread(thread_timestamp)
         return s
+    async def conversation_exists(self, thread_timestamp):
+        if self.conversations.get(thread_timestamp):
+            return True
+        return False
 
-    async def _chat(self, conversation):
-        return await openai.ChatCompletion.acreate(
-            model="gpt-4", messages=[m.asdict() for m in conversation.messages]
+    async def create_conversation(self, thread_timestamp, message: AIMessage):
+        self.conversations.create(thread_timestamp, self.chat_prompt)
+        self.conversations.append(thread_timestamp, message)
+        
+    async def append_conversation(self, thread_timestamp, message: AIMessage):
+        self.conversations.append(thread_timestamp, message)
+
+    async def process_message(self, message: AIMessage, chat_conversation = None):
+        tool_prompt_response = await self.o.chat.completions.create(
+            model="gpt-3.5-turbo", messages=[self.tool_prompt.asdict(), message.asdict()]
         )
         try:
             parsed_response = json.loads(tool_prompt_response.choices[0].message.content)

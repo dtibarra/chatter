@@ -1,6 +1,5 @@
 import os
 import logging
-
 if os.getenv("STDOUT_LOGGING") != "true":
     logging.basicConfig(level=logging.DEBUG, filename="chatter.log")
 else:
