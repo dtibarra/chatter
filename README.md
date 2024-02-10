@@ -18,8 +18,6 @@ Chatter currently has these issues:
   * Conversation LRU cache is set to 100. If it has too many top level messages, some old conversation contexts will get evicted.
   * On that note, if you restart Chatter, it'll forget all conversations, so it won't understand the conversation in existing threads.
   * Chatter will only take the last 4 messages into account, so lengthy conversations will eventually drift off topic.
-  * Prompt config is needlessly bulky, probably could do with removing all of these example conversations in a future release.
-  * There is currently a bug with threads. If I @ chatter, and chatter replies, and then I reply to chatter in a thread, the context of the conversation is localized to only messages in the thread, which doesn't pull in the very first @ message. In my opinion, it should pull in the originating message as well.
 
 ## Getting Started
 
@@ -31,6 +29,7 @@ If you want to run Chatter locally or make changes to the code, follow these ste
   * `pip install -r requirements.txt`
   * If you want to use systemd, check my systemd unit files, you may need to adjust paths.
   * I deploy this with nginx. I make an upstream, e.g. `server unix:/run/gunicorn.sock fail_timeout=0;`, and then proxy_pass to that upstream.
+  * chatter will need its config set up inside sqlite. I don't currently have anything to do this for you, so you will need to consult the sqlalchemy model.
   * Follow these steps to hook it up to your workspace: https://api.slack.com/start/building/bolt-python
   * App defaults to using the `gpt-4` model by default, this can be overriden with GPT_MODEL environment variable.
   * On first start, the app will create an empty database with `null` values if none have been specified via ENV. You can either inject them using environment variables as mentioned below, or just manually insert your values into the sqlite db. 

@@ -1,29 +1,34 @@
-import os
 import openai
 from collections import OrderedDict
-from lib.schemas import Message, Convo
-
-
-class Memory:
+from lib.schemas import AIMessage, Convo, TextResponse, ImageResponse
+import requests
+class Conversations:
     def __init__(self, capacity: int):
         self.cache = OrderedDict()
         self.capacity = capacity
 
     # return a convo
     def get(self, thread_timestamp: int) -> int:
-        if thread_timestamp not in self.cache:
-            return False
-        else:
-            self.cache.move_to_end(thread_timestamp)
+        if thread_timestamp in self.cache:
             return self.cache[thread_timestamp]
+        return None
+
+    def exists(self, thread_timestamp: int) -> int:
+        if thread_timestamp in self.cache:
+            return True
+        return False    
+
+    def bump_thread(self, thread_timestamp: int) -> None:
+        self.cache.move_to_end(thread_timestamp)
 
     # save a convo
-    def push(self, thread_timestamp: int, message: Message) -> None:
+    def create(self, thread_timestamp: int, message: AIMessage) -> None:
         if thread_timestamp not in self.cache:
-            self.cache[thread_timestamp] = Convo()
-            self.cache[thread_timestamp].push(message)
-        else:
-            self.cache[thread_timestamp].push(message)
+            self.cache[thread_timestamp] = []
+            self.cache[thread_timestamp].append(message)
+
+    def append(self,thread_timestamp: int, message: AIMessage) -> None:
+        self.cache[thread_timestamp].append(message)
         self.cache.move_to_end(thread_timestamp)
 
         if len(self.cache) > self.capacity:
@@ -31,46 +36,58 @@ class Memory:
 
 
 class Chatter:
-    class Session:
-        def __init__(self, chatter_instance, thread_timestamp, initialize_prompt=True):
-            self.chatter_instance = chatter_instance
-            self.thread_timestamp = thread_timestamp
-            self.chatter_instance.memory.push(thread_timestamp, chatter_instance.prompt)
+    def __init__(self, openapi_key):
+        self.o = AsyncOpenAI(api_key = openapi_key)
+        self.tool_prompt = AIMessage("system", """You are bot who will always respond in the form of the following JSON:
 
-        async def chat(self, role, message):
-            m = Message(role, message)
-            self.chatter_instance.memory.push(self.thread_timestamp, m)
-            response = await self.chatter_instance._chat(
-                self.chatter_instance.memory.get(self.thread_timestamp)
-            )
-            response_message = Message(
-                response["choices"][0]["message"]["role"],
-                response["choices"][0]["message"]["content"],
-            )
-            self.chatter_instance.memory.push(self.thread_timestamp, response_message)
-            return response_message
+        {"generate_image": false, "image_prompt": "", "generate_text": false}
 
-    def __init__(self, openapi_key, prompt="You are a chat bot."):
-        openai.api_key = openapi_key
-        self.prompt = Message("system", prompt)
-        self.memory = Memory(10)
-        self.id = None
+        If a request seems like it is asking you to generate an image, set "generate_image" to true, and set "image_prompt" to what the user is requesting.
+        For all other requests, set "generate_text" to true.""")
 
-    async def new_session(self, thread_timestamp):
-        s = Chatter.Session(self, thread_timestamp)
-        return s
+        self.chat_prompt = AIMessage("system", """You are a generic bot who is happy to respond to requests to the best of his abilities.""")
+        self.conversations = Conversations(10)
 
-    async def build_session(self, thread_timestamp):
-        s = Chatter.Session(self, thread_timestamp, False)
+        self.slack_id = None
+
+    async def get_conversation(self, thread_timestamp):
+        s = self.conversations.get(thread_timestamp)
+        self.conversations.bump_thread(thread_timestamp)
         return s
 
     async def _chat(self, conversation):
         return await openai.ChatCompletion.acreate(
-            model=os.getenv("GPT_MODEL", "gpt-4"), messages=[m.asdict() for m in conversation.messages]
+            model="gpt-4", messages=[m.asdict() for m in conversation.messages]
         )
+        try:
+            parsed_response = json.loads(tool_prompt_response.choices[0].message.content)
+        except json.decoder.JSONDecodeError:
+            parsed_response = {"generate_text": True}
+        if "generate_text" in parsed_response and parsed_response["generate_text"] is True:
+            if chat_conversation:
+                messages = [m.asdict() for m in chat_conversation]
+                messages.append(message.asdict()) 
+            else:
+                messages = [self.chat_prompt.asdict(), message.asdict()]
+            chat_prompt_response = await self.o.chat.completions.create(
+                model="gpt-4", messages=messages
+            )
+            text_response = TextResponse(chat_prompt_response.choices[0].message.content)
+            return text_response
+        elif "generate_image" in parsed_response and parsed_response["generate_image"] is True and "image_prompt" in parsed_response and parsed_response["image_prompt"]:
+            image_prompt_response = await self.o.images.generate(
+                model="dall-e-3", 
+                prompt=parsed_response["image_prompt"],
+                size="1024x1024",
+                quality="standard",
+                n=1
+            )
+            url = image_prompt_response.data[0].url
+            image_response = ImageResponse(requests.get(url).content)
+            return image_response
 
     async def set_id(self, id):
-        self.id = id
+        self.slack_id = id
 
     async def get_id(self):
-        return self.id
+        return self.slack_id
