@@ -1,3 +1,4 @@
+import os
 from openai import AsyncOpenAI
 import json
 from collections import OrderedDict
@@ -81,7 +82,7 @@ class Chatter:
             else:
                 messages = [self.chat_prompt.asdict(), message.asdict()]
             chat_prompt_response = await self.o.chat.completions.create(
-                model="gpt-4", messages=messages
+                model=os.getenv("GPT_MODEL", "gpt-4"), messages=messages
             )
             text_response = TextResponse(chat_prompt_response.choices[0].message.content)
             return text_response

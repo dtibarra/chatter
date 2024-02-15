@@ -34,6 +34,14 @@ If you want to run Chatter locally or make changes to the code, follow these ste
   * App defaults to using the `gpt-4` model by default, this can be overriden with GPT_MODEL environment variable.
   * On first start, the app will create an empty database with `null` values if none have been specified via ENV. You can either inject them using environment variables as mentioned below, or just manually insert your values into the sqlite db. 
 
+## Slack App Permissions
+
+Chatter requires at minimum, the following slack app scopes:
+  * channels:history
+  * app_mentions:read
+  * chat:write
+  * files:write
+
 ## Running in docker/k8s
 
 The included dockerfile should get you a usable image. You'll need to build it and push it to a registry. Some things to note:

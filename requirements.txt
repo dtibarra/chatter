@@ -6,3 +6,5 @@ gunicorn
 sqlalchemy
 aiosqlite
 prompt_toolkit
+requests
+aiohttp
