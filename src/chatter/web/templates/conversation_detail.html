@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Conversation - Chatter Admin{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="/conversations" class="btn btn-ghost btn-sm">&larr; Back</a>
+        <h1 class="text-2xl font-bold">Conversation</h1>
+        {% if conversation %}
+        <span class="badge badge-outline">{{ conversation.source }}</span>
+        {% endif %}
+    </div>
+
+    {% if conversation and conversation.messages %}
+    <div class="max-w-3xl mx-auto space-y-4">
+        {% for msg in conversation.messages %}
+        <div class="chat {{ 'chat-end' if msg.role == 'user' else 'chat-start' }}">
+            <div class="chat-header opacity-50 text-xs">
+                {{ msg.user_name or msg.role }}
+                <time class="ml-2">{{ msg.created_at.strftime('%H:%M') if msg.created_at else '' }}</time>
+            </div>
+            <div class="chat-bubble {{ 'chat-bubble-primary' if msg.role == 'user' else 'chat-bubble-secondary' if msg.role == 'assistant' else '' }}">
+                {{ msg.content }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% elif conversation %}
+    <p class="opacity-50 text-center py-12">This conversation has no messages.</p>
+    {% else %}
+    <p class="opacity-50 text-center py-12">Conversation not found.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Conversations - Chatter Admin{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <h1 class="text-3xl font-bold mb-8">Conversations</h1>
+
+    {% if conversations %}
+    <div class="glass-card rounded-2xl p-6">
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Thread ID</th>
+                        <th>Source</th>
+                        <th>Started</th>
+                        <th>Last Activity</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for convo in conversations %}
+                    <tr class="hover">
+                        <td class="font-mono text-sm">{{ convo.external_id }}</td>
+                        <td><span class="badge badge-outline badge-sm">{{ convo.source }}</span></td>
+                        <td class="text-sm">{{ convo.created_at.strftime('%Y-%m-%d %H:%M') if convo.created_at else 'N/A' }}</td>
+                        <td class="text-sm">{{ convo.updated_at.strftime('%Y-%m-%d %H:%M') if convo.updated_at else 'N/A' }}</td>
+                        <td><a href="/conversations/{{ convo.external_id }}" class="btn btn-xs btn-primary btn-outline">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="glass-card rounded-2xl p-12 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto opacity-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+        <p class="text-lg opacity-50">No conversations yet</p>
+        <p class="text-sm opacity-30 mt-1">Start chatting with the bot in Slack!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

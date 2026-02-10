@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Memory - Chatter Admin{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <h1 class="text-3xl font-bold mb-8">Memory Browser</h1>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-8">
+        <div class="stat glass-card rounded-2xl p-4">
+            <div class="stat-title">Episodic Memories</div>
+            <div class="stat-value text-primary text-2xl">{{ stats.episodic_count }}</div>
+        </div>
+        <div class="stat glass-card rounded-2xl p-4">
+            <div class="stat-title">Semantic Facts</div>
+            <div class="stat-value text-secondary text-2xl">{{ stats.semantic_count }}</div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="glass-card rounded-2xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Search Memory</h2>
+        <form hx-post="/memory/search" hx-target="#search-results" hx-swap="innerHTML" class="flex gap-3">
+            <input type="text" name="query" placeholder="Search memories..." class="input input-bordered flex-1" />
+            <button type="submit" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search
+            </button>
+        </form>
+        <div id="search-results" class="mt-4"></div>
+    </div>
+
+    <!-- Tabs for Facts and Episodes -->
+    <div role="tablist" class="tabs tabs-boxed mb-6 bg-base-200">
+        <input type="radio" name="memory_tabs" role="tab" class="tab" aria-label="Facts" checked />
+        <div role="tabpanel" class="tab-content p-4">
+            {% if facts %}
+            <div class="space-y-3">
+                {% for fact in facts %}
+                <div class="glass-card rounded-xl p-4 flex justify-between items-start group">
+                    <div>
+                        <p class="text-sm">{{ fact.content }}</p>
+                        <p class="text-xs opacity-40 mt-1">{{ fact.metadata.get('timestamp', 'Unknown time') }} &middot; {{ fact.metadata.get('source', 'unknown') }}</p>
+                    </div>
+                    <button
+                        hx-delete="/memory/semantic/{{ fact.id }}"
+                        hx-target="closest div.glass-card"
+                        hx-swap="outerHTML"
+                        hx-confirm="Delete this memory?"
+                        class="btn btn-xs btn-ghost text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                    >Delete</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="opacity-50 text-center py-8">No semantic facts stored yet.</p>
+            {% endif %}
+        </div>
+
+        <input type="radio" name="memory_tabs" role="tab" class="tab" aria-label="Episodes" />
+        <div role="tabpanel" class="tab-content p-4">
+            {% if episodes %}
+            <div class="space-y-3">
+                {% for ep in episodes %}
+                <div class="glass-card rounded-xl p-4 flex justify-between items-start group">
+                    <div>
+                        <p class="text-sm">{{ ep.content }}</p>
+                        <p class="text-xs opacity-40 mt-1">
+                            {{ ep.metadata.get('timestamp', '') }} &middot;
+                            {{ ep.metadata.get('role', '') }} &middot;
+                            Thread: {{ ep.metadata.get('conversation_id', 'unknown')[:16] }}...
+                        </p>
+                    </div>
+                    <button
+                        hx-delete="/memory/episodic/{{ ep.id }}"
+                        hx-target="closest div.glass-card"
+                        hx-swap="outerHTML"
+                        hx-confirm="Delete this memory?"
+                        class="btn btn-xs btn-ghost text-error opacity-0 group-hover:opacity-100 transition-opacity"
+                    >Delete</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="opacity-50 text-center py-8">No episodic memories stored yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

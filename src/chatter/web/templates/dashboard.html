@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Chatter Admin{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <h1 class="text-3xl font-bold mb-8">Dashboard</h1>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="stat glass-card rounded-2xl p-6">
+            <div class="stat-figure text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div class="stat-title">Episodic Memories</div>
+            <div class="stat-value text-primary">{{ memory_stats.episodic_count }}</div>
+            <div class="stat-desc">Past interactions stored</div>
+        </div>
+
+        <div class="stat glass-card rounded-2xl p-6">
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div class="stat-title">Semantic Facts</div>
+            <div class="stat-value text-secondary">{{ memory_stats.semantic_count }}</div>
+            <div class="stat-desc">Learned knowledge</div>
+        </div>
+
+        <div class="stat glass-card rounded-2xl p-6">
+            <div class="stat-figure text-accent">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+            </div>
+            <div class="stat-title">Conversations</div>
+            <div class="stat-value text-accent">{{ recent_conversations | length }}</div>
+            <div class="stat-desc">Recent threads</div>
+        </div>
+    </div>
+
+    <!-- Active Soul -->
+    <div class="glass-card rounded-2xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+            Active Soul
+        </h2>
+        {% if active_soul %}
+        <div class="bg-base-200 rounded-xl p-4">
+            <div class="flex justify-between items-center mb-2">
+                <span class="badge badge-warning">{{ active_soul.name }}</span>
+                <a href="/soul" class="btn btn-xs btn-ghost">Edit</a>
+            </div>
+            <pre class="text-sm opacity-70 whitespace-pre-wrap max-h-32 overflow-auto">{{ active_soul.system_prompt[:500] }}{% if active_soul.system_prompt | length > 500 %}...{% endif %}</pre>
+        </div>
+        {% else %}
+        <p class="opacity-50">No active soul configured. <a href="/soul" class="link link-primary">Create one</a></p>
+        {% endif %}
+    </div>
+
+    <!-- Recent Conversations -->
+    <div class="glass-card rounded-2xl p-6">
+        <h2 class="text-xl font-semibold mb-4">Recent Conversations</h2>
+        {% if recent_conversations %}
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Thread ID</th>
+                        <th>Source</th>
+                        <th>Started</th>
+                        <th>Last Activity</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for convo in recent_conversations %}
+                    <tr class="hover">
+                        <td class="font-mono text-sm">{{ convo.external_id[:20] }}...</td>
+                        <td><span class="badge badge-outline">{{ convo.source }}</span></td>
+                        <td>{{ convo.created_at.strftime('%Y-%m-%d %H:%M') if convo.created_at else 'N/A' }}</td>
+                        <td>{{ convo.updated_at.strftime('%Y-%m-%d %H:%M') if convo.updated_at else 'N/A' }}</td>
+                        <td><a href="/conversations/{{ convo.external_id }}" class="btn btn-xs btn-ghost">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="opacity-50">No conversations yet. Start chatting with the bot in Slack!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

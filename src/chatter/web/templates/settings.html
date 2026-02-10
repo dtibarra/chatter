@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Settings - Chatter Admin{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <h1 class="text-3xl font-bold mb-2">Settings</h1>
+    <p class="opacity-60 mb-8">Current configuration (read-only, set via environment variables or .env file).</p>
+
+    <div class="glass-card rounded-2xl p-6 max-w-2xl">
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Setting</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, value in settings.items() %}
+                    <tr class="hover">
+                        <td class="font-mono text-sm font-semibold">{{ key }}</td>
+                        <td class="font-mono text-sm">
+                            {% if '...' in value|string %}
+                            <span class="opacity-60">{{ value }}</span>
+                            {% elif value == '(not set)' %}
+                            <span class="opacity-30">{{ value }}</span>
+                            {% else %}
+                            {{ value }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 p-4 bg-base-200 rounded-xl">
+            <p class="text-sm opacity-60">
+                Settings are configured via environment variables or a <code class="kbd kbd-sm">.env</code> file
+                in the project root. See <code class="kbd kbd-sm">.env.example</code> for all available options.
+                Restart the application after making changes.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

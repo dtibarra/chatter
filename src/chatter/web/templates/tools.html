@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Tools - Chatter Admin{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <h1 class="text-3xl font-bold mb-2">MCP Tools</h1>
+    <p class="opacity-60 mb-8">Manage MCP server connections and available tools.</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Add/Edit Server -->
+        <div>
+            <div class="glass-card rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4">Add MCP Server</h2>
+                <form action="/tools/save" method="post">
+                    <div class="form-control mb-3">
+                        <label class="label"><span class="label-text">Name</span></label>
+                        <input type="text" name="name" class="input input-bordered input-sm" placeholder="e.g. brave-search" required />
+                    </div>
+
+                    <div class="form-control mb-3">
+                        <label class="label"><span class="label-text">Type</span></label>
+                        <select name="server_type" class="select select-bordered select-sm">
+                            <option value="stdio">stdio (local process)</option>
+                            <option value="http">HTTP (remote)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-control mb-3">
+                        <label class="label"><span class="label-text">Command (stdio)</span></label>
+                        <input type="text" name="command" class="input input-bordered input-sm" placeholder="e.g. npx" />
+                    </div>
+
+                    <div class="form-control mb-3">
+                        <label class="label"><span class="label-text">Arguments (space-separated)</span></label>
+                        <input type="text" name="args" class="input input-bordered input-sm" placeholder="e.g. -y @modelcontextprotocol/server-fetch" />
+                    </div>
+
+                    <div class="form-control mb-3">
+                        <label class="label"><span class="label-text">URL (HTTP)</span></label>
+                        <input type="text" name="url" class="input input-bordered input-sm" placeholder="e.g. http://localhost:8000/mcp" />
+                    </div>
+
+                    <div class="form-control mb-3">
+                        <label class="label"><span class="label-text">Environment Variables (JSON)</span></label>
+                        <textarea name="env_vars" rows="2" class="textarea textarea-bordered textarea-sm font-mono" placeholder='{"API_KEY": "..."}'>
+                        </textarea>
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            <input type="checkbox" name="enabled" value="true" class="checkbox checkbox-sm checkbox-primary" checked />
+                            <span class="label-text">Enabled</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm">Add Server</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Configured Servers -->
+        <div>
+            <div class="glass-card rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4">Configured Servers</h2>
+                {% if servers %}
+                <div class="space-y-3">
+                    {% for server in servers %}
+                    <div class="bg-base-200 rounded-xl p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-medium">{{ server.name }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-outline badge-sm">{{ server.server_type }}</span>
+                                {% if server.enabled %}
+                                <span class="badge badge-success badge-sm">Enabled</span>
+                                {% else %}
+                                <span class="badge badge-error badge-sm">Disabled</span>
+                                {% endif %}
+                                <form action="/tools/delete/{{ server.name }}" method="post" class="inline">
+                                    <button class="btn btn-xs btn-ghost text-error" onclick="return confirm('Delete this server?')">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% if server.command %}
+                        <p class="text-xs font-mono opacity-50">{{ server.command }} {{ server.args or '' }}</p>
+                        {% elif server.url %}
+                        <p class="text-xs font-mono opacity-50">{{ server.url }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="opacity-50 text-sm">No MCP servers configured yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Live Tools -->
+            {% if connected_tools %}
+            <div class="glass-card rounded-2xl p-6 mt-6">
+                <h2 class="text-lg font-semibold mb-4">Available Tools</h2>
+                <div class="space-y-2">
+                    {% for tool in connected_tools %}
+                    <div class="bg-base-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-mono text-sm text-primary">{{ tool.name }}</span>
+                            <span class="badge badge-ghost badge-xs">{{ tool.server_name }}</span>
+                        </div>
+                        <p class="text-xs opacity-50 mt-1">{{ tool.description[:120] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

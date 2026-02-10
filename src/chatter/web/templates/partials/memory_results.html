@@ -1,0 +1,28 @@
+{% if results.facts or results.episodes %}
+<div class="space-y-4 fade-in">
+    {% if results.facts %}
+    <div>
+        <h3 class="text-sm font-semibold text-secondary mb-2">Facts</h3>
+        {% for fact in results.facts %}
+        <div class="glass-card rounded-xl p-3 mb-2">
+            <p class="text-sm">{{ fact.content }}</p>
+            <p class="text-xs opacity-40 mt-1">Relevance: {{ "%.2f" | format(1 - fact.distance) if fact.distance else 'N/A' }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if results.episodes %}
+    <div>
+        <h3 class="text-sm font-semibold text-primary mb-2">Episodes</h3>
+        {% for ep in results.episodes %}
+        <div class="glass-card rounded-xl p-3 mb-2">
+            <p class="text-sm">{{ ep.content }}</p>
+            <p class="text-xs opacity-40 mt-1">Relevance: {{ "%.2f" | format(1 - ep.distance) if ep.distance else 'N/A' }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<p class="opacity-50 text-center py-4">No results found for "{{ query }}"</p>
+{% endif %}

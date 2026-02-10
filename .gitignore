@@ -1,4 +1,21 @@
-.venv
-chatter.db
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Data
+*.db
 chatter.log
-__pycache__
+chroma_data/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

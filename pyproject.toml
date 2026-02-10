@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chatter"
+version = "2.0.0"
+description = "An agentic Slack chatbot with MCP tool integration, long-term memory, and a web UI"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.11"
+dependencies = [
+    # Agent framework
+    "pydantic-ai>=0.1",
+    # MCP
+    "mcp>=1.20",
+    # LLM providers
+    "openai>=1.0",
+    "anthropic>=0.40",
+    # Slack
+    "slack-bolt>=1.20",
+    # Web UI
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    # Database
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.20",
+    "alembic>=1.14",
+    # Memory
+    "chromadb>=0.5",
+    # Config
+    "pydantic-settings>=2.0",
+    # HTTP
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-httpx>=0.30",
+    "coverage>=7.0",
+    "ruff>=0.8",
+]
+postgres = [
+    "asyncpg>=0.30",
+    "psycopg2-binary>=2.9",
+]
+
+[project.scripts]
+chatter = "chatter.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chatter"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]

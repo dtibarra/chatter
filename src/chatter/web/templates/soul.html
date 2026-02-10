@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Soul - Chatter Admin{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <h1 class="text-3xl font-bold mb-2">Soul Editor</h1>
+    <p class="opacity-60 mb-8">Configure Chatter's personality, behavior, and system prompts.</p>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Editor -->
+        <div class="lg:col-span-2">
+            <form action="/soul/save" method="post">
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="form-control mb-4">
+                        <label class="label"><span class="label-text font-semibold">Soul Name</span></label>
+                        <input type="text" name="name" value="{{ active_soul.name if active_soul else 'default' }}"
+                               class="input input-bordered" placeholder="e.g. default, creative, professional" />
+                    </div>
+
+                    <div class="form-control mb-4">
+                        <label class="label"><span class="label-text font-semibold">System Prompt</span></label>
+                        <textarea name="system_prompt" rows="16"
+                                  class="textarea textarea-bordered font-mono text-sm leading-relaxed"
+                                  placeholder="Enter the system prompt that defines Chatter's personality...">{{ active_soul.system_prompt if active_soul else '' }}</textarea>
+                    </div>
+
+                    <div class="form-control mb-6">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            <input type="checkbox" name="is_active" value="true"
+                                   class="checkbox checkbox-primary"
+                                   {% if active_soul and active_soul.is_active %}checked{% endif %} />
+                            <span class="label-text">Set as active soul</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Save Soul
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Saved Souls List -->
+        <div>
+            <div class="glass-card rounded-2xl p-6">
+                <h2 class="text-lg font-semibold mb-4">Saved Souls</h2>
+                {% if souls %}
+                <div class="space-y-3">
+                    {% for s in souls %}
+                    <div class="bg-base-200 rounded-xl p-4 cursor-pointer hover:bg-base-100 transition-colors"
+                         onclick="document.querySelector('[name=name]').value='{{ s.name }}'; document.querySelector('[name=system_prompt]').value=`{{ s.system_prompt | replace('`', '\\`') | replace('\n', '\\n') }}`">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-medium">{{ s.name }}</span>
+                            {% if s.is_active %}
+                            <span class="badge badge-success badge-sm">Active</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs opacity-50 line-clamp-2">{{ s.system_prompt[:100] }}...</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="opacity-50 text-sm">No souls saved yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

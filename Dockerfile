@@ -1,26 +1,30 @@
-FROM python:3.11.4-bullseye
+FROM python:3.12-slim
 
-RUN apt update && \
-    apt install sqlite3 && \
-    apt clean all
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends sqlite3 && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /app
-WORKDIR /app/
+WORKDIR /app
 
-RUN python3 -m venv .venv
-ENV PATH="/app/.venv/bin:$PATH"
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Install dependencies
+COPY pyproject.toml .
+RUN pip install --no-cache-dir .
 
-COPY *.py /app/
-COPY lib /app/lib
+# Copy application code
+COPY src/ src/
 
-RUN mkdir /var/lib/chatter && \
-    chown nobody /var/lib/chatter
+# Create data directories
+RUN mkdir -p /var/lib/chatter/chroma_data && \
+    chown -R nobody:nogroup /var/lib/chatter
 
-ENV DATABASE_PATH="/var/lib/chatter/chatter.db"
-ENV STDOUT_LOGGING="true"
+ENV DATABASE_URL="sqlite+aiosqlite:////var/lib/chatter/chatter.db"
+ENV CHROMADB_PATH="/var/lib/chatter/chroma_data"
+ENV LOG_LEVEL="INFO"
 
 USER nobody
 
-CMD ["/app/.venv/bin/gunicorn", "--bind", "0.0.0.0:3000", "--timeout", "180", "-k", "uvicorn.workers.UvicornWorker", "slackbot:api", "--threads", "4"]
+# Expose web UI port
+EXPOSE 8080
+
+# Default: run both web UI and Slack bot
+CMD ["python", "-m", "chatter", "run"]

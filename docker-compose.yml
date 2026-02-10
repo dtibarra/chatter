@@ -1,0 +1,13 @@
+services:
+  chatter:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - chatter-data:/var/lib/chatter
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  chatter-data:
