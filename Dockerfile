@@ -6,12 +6,10 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Install dependencies
+# Copy source and install
 COPY pyproject.toml .
-RUN pip install --no-cache-dir .
-
-# Copy application code
 COPY src/ src/
+RUN pip install --no-cache-dir .
 
 # Create data directories
 RUN mkdir -p /var/lib/chatter/chroma_data && \
